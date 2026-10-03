@@ -5,16 +5,6 @@ import { property } from "lit/decorators.js";
 import { ICardConfig } from "../types";
 import styles from "./card.css";
 
-// Registrierung für die Home Assistant Kartenauswahl (Card Picker)
-(window as any).customCards = (window as any).customCards || [];
-(window as any).customCards.push({
-    type: "realistic-cover-card", // Dein gewählter Karten-Typ (ohne "custom:")
-    name: "Realistic Cover",
-    preview: true, // Aktiviert die Live-Vorschau im Menü
-    description: "Interaktive 3D-Karte für Rollläden, Raffstores und Garagentore."
-});
-
-// --- ÜBERSETZUNGS-WÖRTERBUCH ---
 const translations: Record<string, Record<string, string>> = {
     en: {
         closed: "CLOSED",
@@ -24,6 +14,7 @@ const translations: Record<string, Record<string, string>> = {
         opening: "OPENING...",
         closing: "CLOSING...",
         sending: "SENDING COMMAND...",
+        stop: "STOPPED",
         blind: "BLIND",
         open_sensor: "Open",
         closed_sensor: "Closed"
@@ -36,36 +27,31 @@ const translations: Record<string, Record<string, string>> = {
         opening: "WIRD GEÖFFNET...",
         closing: "WIRD GESCHLOSSEN...",
         sending: "SENDE BEFEHL...",
+        stop: "GESTOPPT",
         blind: "BEHANG",
         open_sensor: "Offen",
         closed_sensor: "Zu"
     }
 };
 
-/**
- * Main card class definition
- */
 export class MyCustomCard extends LitElement {
     @property({ attribute: false }) private cardTitle: string = "Garagentor";
     @property({ attribute: false }) private state: string = "";
     
-    // --- NEU: Optionale Entitäten & deren Status ---
     @property({ attribute: false }) private lightStateObj: any = null;
     @property({ attribute: false }) private sensorStateObj: any = null;
+    @property({ attribute: false }) private sunStateObj: any = null; 
     
-
     private entity: string = "";
     private lightEntity: string = "";
     private sensorEntity: string = "";
     private _hass!: HomeAssistant;
 
-    // --- NEU: Globale Variablen für Interaktion & Status ---
     private currentPercentage = 0;
     private isDragging = false;
     private maxTravelPixels = 180;
     private _config!: any;
 
-    // --- Raffstore Status & Physik ---
     private currentTilt = 0;
     private isDraggingTilt = false;
     private readonly SLAT_COUNT = 16;          
@@ -73,8 +59,7 @@ export class MyCustomCard extends LitElement {
     private readonly BLIND_MAX_TRAVEL = 190;   
     private readonly STACKED_HEIGHT = 1.5;     
     private readonly SLAT_HEIGHT = 10.0;       
-    
-    // --- NEU: Übersetzungs-Hilfsfunktion ---
+
     private localize(stringKey: string): string {
         const lang = this._hass?.language || 'en'; 
         if (translations[lang] && translations[lang][stringKey]) {
@@ -101,6 +86,72 @@ export class MyCustomCard extends LitElement {
         ).toString(16).slice(1);
     }
 
+    private _interpolateColor(color1: string, color2: string, factor: number): string {
+        const hex1 = color1.replace('#', '');
+        const hex2 = color2.replace('#', '');
+        
+        const r1 = parseInt(hex1.substring(0, 2), 16);
+        const g1 = parseInt(hex1.substring(2, 4), 16);
+        const b1 = parseInt(hex1.substring(4, 6), 16);
+        
+        const r2 = parseInt(hex2.substring(0, 2), 16);
+        const g2 = parseInt(hex2.substring(2, 4), 16);
+        const b2 = parseInt(hex2.substring(4, 6), 16);
+        
+        const r = Math.round(r1 + factor * (r2 - r1));
+        const g = Math.round(g1 + factor * (g2 - g1));
+        const b = Math.round(b1 + factor * (b2 - b1));
+        
+        return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+    }
+
+    private _getSkyColors(): { top: string, bottom: string } {
+        if (this._config?.color_window) {
+            return { 
+                top: this._config.color_window, 
+                bottom: this._getShadedColor(this._config.color_window, -0.4) 
+            };
+        }
+
+        const sun = this._hass?.states['sun.sun'];
+        if (!sun || sun.attributes.elevation === undefined) {
+            return { top: "#1e293b", bottom: "#0f172a" }; 
+        }
+        
+        const elevation = sun.attributes.elevation;
+
+        if (elevation >= 10) return { top: "#38bdf8", bottom: "#bae6fd" }; 
+        if (elevation <= -10) return { top: "#0f172a", bottom: "#1e293b" }; 
+
+        if (elevation >= 0) {
+            const factor = elevation / 10;
+            return {
+                top: this._interpolateColor("#1e3a8a", "#38bdf8", factor),
+                bottom: this._interpolateColor("#fb923c", "#bae6fd", factor)
+            };
+        } else {
+            const factor = (elevation + 10) / 10;
+            return {
+                top: this._interpolateColor("#0f172a", "#1e3a8a", factor),
+                bottom: this._interpolateColor("#1e293b", "#fb923c", factor)
+            };
+        }
+    }
+
+    private _renderLightGlow(): TemplateResult | string {
+        if (this._config?.show_light_glow === false) return "";
+        if (this.lightStateObj?.state !== 'on') return "";
+        
+        return svg`
+            <radialGradient id="light-glow-grad" cx="50%" cy="50%" r="70%">
+                <stop offset="0%" stop-color="#eab308" stop-opacity="0.35" />
+                <stop offset="50%" stop-color="#eab308" stop-opacity="0.1" />
+                <stop offset="100%" stop-color="#eab308" stop-opacity="0" />
+            </radialGradient>
+            <rect x="15" y="20" width="230" height="210" fill="url(#light-glow-grad)" style="pointer-events: none;" />
+        `;
+    }
+
     private _setCoverPosition(pos: number) {
         if (!this._hass || !this.entity) return;
         
@@ -123,15 +174,14 @@ export class MyCustomCard extends LitElement {
         return {
             entity: "",
             title: "Garagentor",
-            light_entity: "",
-            sensor_entity: "",
-            light_icon: "mdi:lightbulb",
             cover_type: "garage",
             show_status_text: true,      
-            show_main_buttons: true,     
-            show_vent_button: false,     
+            show_main_buttons: true,
+            show_stop_button: true, 
+            show_vent_button: false,
             disable_drag: false, 
             vent_percentage: 8,
+            use_3d_colors: true
         };
     }
 
@@ -168,11 +218,23 @@ export class MyCustomCard extends LitElement {
     set hass(hass: HomeAssistant) {
         this._hass = hass;
 
+        const oldSun = this.sunStateObj;
+        this.sunStateObj = hass.states['sun.sun'];
+        
+        const oldLight = this.lightStateObj;
         if (this.lightEntity) {
             this.lightStateObj = hass.states[this.lightEntity];
         }
+
         if (this.sensorEntity) {
             this.sensorStateObj = hass.states[this.sensorEntity];
+        }
+
+        if (
+            (oldSun && this.sunStateObj && oldSun.attributes.elevation !== this.sunStateObj.attributes.elevation) ||
+            (oldLight && this.lightStateObj && oldLight.state !== this.lightStateObj.state)
+        ) {
+            this.requestUpdate();
         }
 
         if (!this.entity || !hass.states[this.entity]) return;
@@ -221,6 +283,7 @@ export class MyCustomCard extends LitElement {
         const btnOpen = this.shadowRoot?.getElementById('btn-open');
         const btnVent = this.shadowRoot?.getElementById('btn-vent');
         const btnClose = this.shadowRoot?.getElementById('btn-close');
+        const btnStop = this.shadowRoot?.getElementById('btn-stop');
 
         let startY = 0;
         let startPercent = 0;
@@ -237,7 +300,6 @@ export class MyCustomCard extends LitElement {
 
         interactionZone?.addEventListener('pointermove', (e: PointerEvent) => {
             if (!this.isDragging) return;
-            
             const rect = interactionZone.getBoundingClientRect();
             const maxRealTravel = rect.height * (180 / 210);
             
@@ -285,6 +347,15 @@ export class MyCustomCard extends LitElement {
         btnClose?.addEventListener('click', () => {
             animateToAndCall(0, "close_cover", { entity_id: this.entity });
         });
+
+        btnStop?.addEventListener('click', () => {
+            if (doorGroup) doorGroup.style.transition = 'none';
+            this.updateVisuals(this.currentPercentage, this.localize('stop'));
+            
+            if (this._hass && this.entity) {
+                this._hass.callService("cover", "stop_cover", { entity_id: this.entity });
+            }
+        });
     }
 
     private toggleLight(ev: Event) {
@@ -295,7 +366,16 @@ export class MyCustomCard extends LitElement {
         }
     }
 
-    // --- RAFFSTORE INTERAKTION ---
+    private _handleMoreInfo() {
+        if (!this.entity) return;
+        const event = new CustomEvent('hass-more-info', {
+            bubbles: true,
+            composed: true,
+            detail: { entityId: this.entity }
+        });
+        this.dispatchEvent(event);
+    }
+
     private processBlindDrag(e: PointerEvent) {
         const target = e.currentTarget as HTMLElement;
         const rect = target.getBoundingClientRect();
@@ -364,13 +444,11 @@ export class MyCustomCard extends LitElement {
         }
     }
 
-    // --- ROLLLADEN INTERAKTION ---
     private processShutterDrag(e: PointerEvent) {
         const target = e.currentTarget as HTMLElement;
         const rect = target.getBoundingClientRect();
         
         const relativeY = ((e.clientY - rect.top) / rect.height) * 240; 
-        
         let svgPercent = ((relativeY - 20) / 210) * 100;
         svgPercent = Math.max(0, Math.min(100, svgPercent));
         
@@ -401,7 +479,6 @@ export class MyCustomCard extends LitElement {
         }
     }
 
-    // --- AUSGELAGERTE RENDER-METHODEN FÜR DIE TYPEN ---
     private renderGarage(): TemplateResult {
         const use3D = this._config?.use_3d_colors !== false;
         
@@ -412,6 +489,8 @@ export class MyCustomCard extends LitElement {
         const baseMoving = this._config?.color_moving || "#475569";
         const movingLight = use3D ? this._getShadedColor(baseMoving, 0.15) : baseMoving;
         const movingDark = use3D ? this._getShadedColor(baseMoving, -0.3) : baseMoving;
+
+        const sky = this._getSkyColors(); 
 
         return html`
         <div style="width: 100%; display: flex; justify-content: center;">
@@ -428,6 +507,11 @@ export class MyCustomCard extends LitElement {
                         <stop offset="100%" stop-color="${movingDark}" />
                     </linearGradient>
                     
+                    <linearGradient id="dynamic-sky-garage" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="${sky.top}" />
+                        <stop offset="100%" stop-color="${sky.bottom}" />
+                    </linearGradient>
+
                     <linearGradient id="track-grad" x1="0" y1="0" x2="1" y2="0">
                         <stop offset="0%" stop-color="#020617" />
                         <stop offset="50%" stop-color="#334155" />
@@ -438,7 +522,9 @@ export class MyCustomCard extends LitElement {
                     </clipPath>
                 </defs>
 
-                <rect x="20" y="30" width="260" height="210" fill="#020617" />
+                <rect x="20" y="30" width="260" height="210" fill="url(#dynamic-sky-garage)" style="transition: fill 1s ease;" />
+                ${this._renderLightGlow()}
+                
                 <rect x="15" y="30" width="10" height="210" fill="url(#track-grad)" />
                 <rect x="275" y="30" width="10" height="210" fill="url(#track-grad)" />
 
@@ -449,7 +535,6 @@ export class MyCustomCard extends LitElement {
                         <rect class="door-section" x="25" y="118" width="250" height="40" rx="3" fill="url(#dyn-moving-grad)" stroke="#020617" stroke-width="1"/>
                         <rect class="door-section" x="25" y="159.5" width="250" height="40" rx="3" fill="url(#dyn-moving-grad)" stroke="#020617" stroke-width="1"/>
                         <rect class="door-section" x="25" y="201" width="250" height="40" rx="3" fill="url(#dyn-moving-grad)" stroke="#020617" stroke-width="1"/>
-                        
                         <rect class="door-section" x="25" y="241" width="250" height="8" rx="2" fill="#020617"/>
                         
                         <rect id="interaction-zone" x="20" y="30" width="260" height="215" fill="transparent" 
@@ -513,6 +598,8 @@ export class MyCustomCard extends LitElement {
         const movingLight = use3D ? this._getShadedColor(baseMoving, 0.15) : baseMoving;
         const movingDark = use3D ? this._getShadedColor(baseMoving, -0.3) : baseMoving;
 
+        const sky = this._getSkyColors();
+
         return html`
             <div style="display: flex; justify-content: center; width: 100%;">
                 <div style="position: relative; width: calc(100% - 56px); 
@@ -536,22 +623,24 @@ export class MyCustomCard extends LitElement {
                                 <stop offset="100%" stop-color="${movingDark}" />
                             </linearGradient>
 
-                            <linearGradient id="window-bg-shutter" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stop-color="#1e293b" />
-                                <stop offset="50%" stop-color="#0f172a" />
-                                <stop offset="100%" stop-color="#020617" />
+                            <linearGradient id="dynamic-sky-shutter" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="${sky.top}" />
+                                <stop offset="100%" stop-color="${sky.bottom}" />
                             </linearGradient>
+
                             <linearGradient id="glass-reflection-shutter" x1="0" y1="0" x2="1" y2="1">
                                 <stop offset="0%" stop-color="#ffffff" stop-opacity="0.1" />
                                 <stop offset="30%" stop-color="#ffffff" stop-opacity="0.0" />
                             </linearGradient>
+                            
                             <clipPath id="shutter-window-clip">
                                 <rect x="15" y="20" width="230" height="210" />
                             </clipPath>
                         </defs>
 
                         <rect x="10" y="10" width="240" height="220" rx="10" fill="url(#dyn-frame-grad)" stroke="#0f172a" stroke-width="4"/>
-                        <rect x="15" y="20" width="230" height="210" fill="url(#window-bg-shutter)" />
+                        <rect x="15" y="20" width="230" height="210" fill="url(#dynamic-sky-shutter)" style="transition: fill 1s ease;" />
+                        ${this._renderLightGlow()}
                         <rect x="15" y="20" width="230" height="210" fill="url(#glass-reflection-shutter)" />
 
                         <g clip-path="url(#shutter-window-clip)">
@@ -608,6 +697,8 @@ export class MyCustomCard extends LitElement {
         const yBottomRail = this.BLIND_START_Y + (visualPercent / 100) * this.BLIND_MAX_TRAVEL;
         const bottomRailColor = this.isDragging ? "#38bdf8" : (use3D ? this._getShadedColor(baseMoving, -0.2) : baseMoving);
 
+        const sky = this._getSkyColors();
+
         return html`
             <div style="display: flex; gap: 12px; width: 100%; align-items: stretch;">
                 <div style="position: relative; flex-grow: 1; 
@@ -633,11 +724,16 @@ export class MyCustomCard extends LitElement {
                                 <stop offset="100%" stop-color="${movingDark}" />
                             </linearGradient>
 
-                            <linearGradient id="window-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e293b" /><stop offset="40%" stop-color="#0f172a" /><stop offset="100%" stop-color="#020617" /></linearGradient>
+                            <linearGradient id="dynamic-sky-blind" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="${sky.top}" />
+                                <stop offset="100%" stop-color="${sky.bottom}" />
+                            </linearGradient>
+
                             <linearGradient id="glass-reflection" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" /><stop offset="30%" stop-color="#ffffff" stop-opacity="0.02" /><stop offset="100%" stop-color="#ffffff" stop-opacity="0.0" /></linearGradient>
                         </defs>
 
-                        <rect x="15" y="40" width="230" height="190" fill="url(#window-bg)" rx="2" />
+                        <rect x="15" y="40" width="230" height="190" fill="url(#dynamic-sky-blind)" rx="2" style="transition: fill 1s ease;" />
+                        ${this._renderLightGlow()}
                         <rect x="15" y="40" width="230" height="190" fill="url(#glass-reflection)" rx="2" />
                         
                         <line x1="60" y1="40" x2="60" y2="230" stroke="#334155" stroke-width="1.0" stroke-dasharray="2,2" opacity="0.6"/>
@@ -656,7 +752,7 @@ export class MyCustomCard extends LitElement {
                         <rect x="10" y="5" width="240" height="35" fill="url(#dyn-frame-grad)" rx="2" />
                         <rect x="10" y="40" width="240" height="1" fill="#0f172a" opacity="0.6" />
                         
-                        <text x="130" y="27" fill="#0f172a" font-size="8" font-weight="bold" text-anchor="middle" letter-spacing="0.5" opacity="0.8">${this.localize('blind')}:${Math.round(this.currentPercentage)}%</text>
+                        <text x="130" y="27" fill="#0f172a" font-size="8" font-weight="bold" text-anchor="middle" letter-spacing="0.5" opacity="0.8">${this.localize('blind')}: ${Math.round(this.currentPercentage)}%</text>
                     </svg>
                 </div>
 
@@ -690,16 +786,17 @@ export class MyCustomCard extends LitElement {
 
             if (state === "on" && !uom) sensorDisplay = this.localize('open_sensor');
             else if (state === "off" && !uom) sensorDisplay = this.localize('closed_sensor');
-            else sensorDisplay = `${state}${uom}`.trim();
+            else sensorDisplay = `${state} ${uom}`.trim();
         }
 
         const isLightOn = this.lightStateObj && this.lightStateObj.state === 'on';
         const lightIcon = this._config?.light_icon || "mdi:lightbulb";
         
         const coverType = this._config?.cover_type || "garage";
+        const btnColor = this._config?.color_button || "#1e293b";
 
         return html`
-        <ha-card>
+        <ha-card @click=${this._handleMoreInfo} style="cursor: pointer;">
             <div id="cover-card" class="cover-container" style="padding: 16px; display: flex; flex-direction: column; gap: 16px;">
                 
                 <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -724,7 +821,7 @@ export class MyCustomCard extends LitElement {
                     <div id="status-display" class="status-display" style="font-size: 0.9rem; color: #94a3b8; font-weight: bold;">${this.localize('closed')}</div>
                 ` : ''}
 
-                <div class="main-area" style="display: flex; gap: 16px; align-items: stretch;">
+                <div class="main-area" @click=${(e: Event) => e.stopPropagation()} style="display: flex; gap: 16px; align-items: stretch; cursor: default;">
                     <div style="flex-grow: 1;">
                         ${coverType === 'garage' ? this.renderGarage() : ''}
                         ${coverType === 'shutter' ? this.renderShutter() : ''}
@@ -732,26 +829,31 @@ export class MyCustomCard extends LitElement {
                     </div>
                 </div>
 
-                ${(this._config?.show_main_buttons !== false || this._config?.show_vent_button === true) ? html`
-                    <div class="controls" style="display: flex; gap: 8px;">
+                ${(this._config?.show_main_buttons !== false || this._config?.show_stop_button !== false || this._config?.show_vent_button === true) ? html`
+                    <div class="controls" @click=${(e: Event) => e.stopPropagation()} style="display: flex; gap: 8px; justify-content: center; cursor: default;">
                         
                         ${this._config?.show_main_buttons !== false ? html`
-                            <button id="btn-open" style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: #1e293b; color: #f8fafc; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: background 0.2s;">
+                            <button id="btn-open" style="flex: 1; max-width: 100px; height: 44px; border-radius: 8px; border: none; background: ${btnColor}; color: #f8fafc; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: background 0.2s;">
                                 <ha-icon icon="mdi:arrow-up"></ha-icon>
+                            </button>
+                        ` : ''}
+
+                        ${this._config?.show_stop_button !== false ? html`
+                            <button id="btn-stop" style="flex: 1; max-width: 100px; height: 44px; border-radius: 8px; border: none; background: ${btnColor}; color: #f8fafc; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: background 0.2s;">
+                                <ha-icon icon="mdi:stop"></ha-icon>
                             </button>
                         ` : ''}
                         
                         ${this._config?.show_vent_button === true ? html`
                             <button id="btn-vent" 
                                 @click=${() => this._setCoverPosition(Number(this._config?.vent_percentage || 8))}
-                                style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: #1e293b; color: #f8fafc; cursor: pointer; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; transition: background 0.2s;">
-                                <ha-icon icon="mdi:air-filter" style="margin-bottom: 2px;"></ha-icon>
-                                <span style="font-size: 0.7rem; color: #38bdf8;">${this.localize('vent')} (${Number(this._config?.vent_percentage || 8)}%)</span>
+                                style="flex: 1; max-width: 100px; height: 44px; border-radius: 8px; border: none; background: ${btnColor}; color: #f8fafc; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: background 0.2s;">
+                                <ha-icon icon="mdi:air-filter"></ha-icon>
                             </button>
                         ` : ''}
                         
                         ${this._config?.show_main_buttons !== false ? html`
-                            <button id="btn-close" style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: #1e293b; color: #f8fafc; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: background 0.2s;">
+                            <button id="btn-close" style="flex: 1; max-width: 100px; height: 44px; border-radius: 8px; border: none; background: ${btnColor}; color: #f8fafc; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: background 0.2s;">
                                 <ha-icon icon="mdi:arrow-down"></ha-icon>
                             </button>
                         ` : ''}
@@ -764,3 +866,11 @@ export class MyCustomCard extends LitElement {
         `;
     }
 }
+
+(window as any).customCards = (window as any).customCards || [];
+(window as any).customCards.push({
+    type: "realistic-cover-card", 
+    name: "Realistic Cover",
+    preview: true, 
+    description: "Interactive animated card for covers and blinds with real-time physics and sun-tracking background."
+});
