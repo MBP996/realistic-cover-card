@@ -1,79 +1,82 @@
-# Realistic Cover Card für Home Assistant
+# Realistic Cover Card for Home Assistant
 
-Eine hochwertige, interaktive und animierte Custom Card für Home Assistant zur Steuerung von Rollläden, Raffstores und Garagentoren[cite: 2]. 
+A high-quality, interactive, and animated custom card for Home Assistant to control roller shutters, venetian blinds, and garage doors.
 
-Die Karte nutzt fortschrittliche SVG-Renderings, um den aktuellen Status und die Bewegung deiner Abdeckungen in Echtzeit darzustellen, und reagiert dynamisch auf deine Umgebung (z.B. Sonnenstand und Raumlicht)[cite: 2].
+The card uses advanced SVG rendering to display the current state and movement of your covers in real-time, and reacts dynamically to your environment (e.g., sun position and room lighting).
 
-## 🎬 Vorschau der Modelle
+If you enjoy this project and want to support my work, I'd appreciate a coffee! ☕
+<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="MBPProjects" data-color="#FFDD00" data-emoji=""  data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
 
-Hier sind die verschiedenen Darstellungsmöglichkeiten der Karte. **Neu:** Rollladen und Raffstores gibt es nun in unterschiedlichen Versionen als Fenster, Türe und Schiebetüre inkl. neuer Fensteranimationen und verschiedener Garagenmodi!
+## 🎬 Model Preview
 
-| Garagentor | Rollladen | Raffstore |
+Here are the different display options of the card. **New:** Roller shutters and venetian blinds are now available in different versions as a standard window, door, and sliding door, including new window animations and various garage modes!
+
+| Garage Door | Roller Shutter | Venetian Blind |
 |:---:|:---:|:---:|
-| ![Garagentor](assets/Garage.gif) | ![Rollladen](assets/Rollladen.gif) | ![Raffstore](assets/Raffstore.gif) |
+| ![Garage Door](assets/Garage.gif) | ![Roller Shutter](assets/Rollladen.gif) | ![Venetian Blind](assets/Raffstore.gif) |
 
-| Fenster | Schiebetür |
+| Window | Sliding Door |
 |:---:|:---:|
-| ![Fenster](assets/Fenster.gif) | ![Schiebetür](assets/Schiebetür.gif) |
+| ![Window](assets/Fenster.gif) | ![Sliding Door](assets/Schiebetür.gif) |
 
-## 🛠️ Editor-Einstellungen & Funktionen
+## 🛠️ Editor Settings & Features
 
-Alle neuen Funktionen lassen sich direkt im visuellen Editor konfigurieren. Hier ein Einblick in die verschiedenen Einstellungsmöglichkeiten:
+All new features can be configured directly in the visual editor. Here is a glimpse of the various setting options:
 
-* **Allgemeine Farbauswahl:**
-  ![Farbauswahl](assets/FarbauswahlFunktion.gif)
+- **General Color Selection:**
+  ![Color Selection](assets/FarbauswahlFunktion.gif)
 
-* **Fenster- & Fenstergriff-Funktionen:**
-  ![Fenster](assets/FensterFunktionen.gif)
-  ![Fenstergriff](assets/FenstergriffFunktion.gif)
+- **Window & Window Handle Features:**
+  ![Window](assets/FensterFunktionen.gif)
+  ![Window Handle](assets/FenstergriffFunktion.gif)
 
-* **Spezifische Abdeckungs-Funktionen:**
-  * **Garagen:** ![Garagen](assets/GaragenFunktionen.gif)
-  * **Rollladen:** ![Rollladen](assets/RollladenFunktionen.gif)
-  * **Raffstores:** ![Raffstore](assets/RaffstoreFunktionen.gif)
+- **Specific Cover Features:**
+  * **Garages:** ![Garages](assets/GaragenFunktionen.gif)
+  * **Roller Shutters:** ![Roller Shutter](assets/RollladenFunktionen.gif)
+  * **Venetian Blinds:** ![Venetian Blind](assets/RaffstoreFunktionen.gif)
 
 ![Visual Editor](assets/image.png)
 
 ## ✨ Features
 
-* **Erweiterte unterstützte Typen:** Garagentor (verschiedene Modi), Rollladen und Raffstore (inkl. Lamellen-Neigung) – jeweils anpassbar als Fenster, Türe oder Schiebetüre.
-* **Interaktive Steuerung:** Wische (Drag) den Behang direkt in der Grafik hoch und runter, um die Position einzustellen[cite: 2].
-* **Fensteranimationen:** Neue, flüssige Animationen für das Öffnen und Schließen von Fenstern und Türen.
-* **Dynamischer Sonnen-Hintergrund:** Die Karte liest automatisch die Entität `sun.sun` aus. Der Himmel im Fensterhintergrund färbt sich stufenlos vom strahlenden Blau (Tag) über Orange (Dämmerung) bis hin zu Dunkelblau/Schwarz (Nacht)[cite: 2].
-* **Raumlicht-Spiegelung (Glow):** Verknüpfe eine Licht-Entität mit der Karte. Wenn das Licht im Zimmer brennt, spiegelt sich ein warmer "Glow" im Fensterglas[cite: 2].
-* **More-Info Dialog:** Ein Klick auf die Karte öffnet den Standard-Einstellungsdialog der Cover-Entität[cite: 2].
-* **Anpassbare Buttons:** Blende Haupt-Buttons (Auf/Zu), einen Stop-Button und einen dedizierten Lüftungs-Button (mit definierbarer Zielposition) nach Belieben ein oder aus[cite: 2].
-* **Visueller Editor:** Vollständige Integration in den Home Assistant Card Picker UI-Editor. Kein YAML-Code zwingend erforderlich![cite: 2].
-* **100% Anpassbar:** Ändere die Farben von Rahmen, Behang, Fensterhintergrund und Buttons oder schalte den 3D-Schatten-Effekt um[cite: 2].
+- **Extended Supported Types:** Garage door (various modes), roller shutter, and venetian blind (incl. slat tilt) – each customizable as a window, door, or sliding door.
+- **Interactive Control:** Swipe (drag) the cover directly in the graphic up and down to adjust the position.
+- **Window Animations:** New, smooth animations for opening and closing windows and doors.
+- **Dynamic Sun Background:** The card automatically reads the `sun.sun` entity. The sky in the window background smoothly transitions from bright blue (day) to orange (dusk) to dark blue/black (night).
+- **Room Light Reflection (Glow):** Link a light entity to the card. When the light is on in the room, a warm "glow" reflects in the window glass.
+- **More-Info Dialog:** Clicking on the card opens the standard settings dialog of the cover entity.
+- **Customizable Buttons:** Show or hide main buttons (Up/Down), a stop button, and a dedicated vent button (with a definable target position) as you like.
+- **Visual Editor:** Full integration into the Home Assistant Card Picker UI editor. No YAML code is strictly required!
+- **100% Customizable:** Change the colors of the frame, cover, window background, and buttons, or toggle the 3D shadow effect.
 
-## 📦 Installation (über HACS)
+## 📦 Installation (via HACS)
 
-1. Öffne Home Assistant und navigiere zu **HACS** > **Frontend**[cite: 2].
-2. Klicke oben rechts auf das Drei-Punkte-Menü und wähle **Benutzerdefinierte Repositories**[cite: 2].
-3. Füge die URL dieses Repositories ein und wähle die Kategorie **Lovelace**[cite: 2].
-4. Klicke auf **Hinzufügen**[cite: 2].
-5. Suche in HACS nach *Realistic Cover Card* und klicke auf **Herunterladen**[cite: 2].
-6. Lade dein Dashboard neu (oder leere den Cache deines Browsers)[cite: 2].
+1. Open Home Assistant and navigate to **HACS** > **Frontend**.
+2. Click on the three-dot menu in the top right corner and select **Custom repositories**.
+3. Paste the URL of this repository and select the category **Lovelace**.
+4. Click on **Add**.
+5. Search for *Realistic Cover Card* in HACS and click **Download**.
+6. Reload your dashboard (or clear your browser cache).
 
-## ⚙️ Konfiguration
+## ⚙️ Configuration
 
-Du kannst die Karte ganz einfach über den visuellen Editor in Home Assistant hinzufügen. Wähle dazu beim Hinzufügen einer neuen Karte **"Realistic Cover"** aus der Liste aus[cite: 2].
+You can easily add the card via the visual editor in Home Assistant. Simply select **"Realistic Cover"** from the list when adding a new card.
 
-### Optionen im Editor
+### Editor Options
 
-* **Titel:** Die Überschrift der Karte[cite: 2].
-* **Haupt-Entität:** Deine `cover.*` Entität[cite: 2].
-* **Art der Abdeckung:** Wähle zwischen *Garagentor*, *Rollladen* und *Raffstore* (sowie den neuen Fenster-/Tür-Varianten)[cite: 2].
-* **Behanghöhe / Neigung invertieren:** Falls deine Entität 0% als "Offen" interpretiert, kannst du das Verhalten hier umkehren[cite: 2].
-* **Licht / Schalter (Optional):** Für die Raumlicht-Spiegelung im Fenster[cite: 2].
-* **Sensor / Kontakt (Optional):** Zeigt den Status eines zusätzlichen Fenster- oder Torkontakts als kleinen Text-Badge an[cite: 2].
-* **Sichtbarkeit:** Schalte Status-Texte, Auf/Zu-Buttons, Stop-Buttons oder den Lüftungs-Button individuell ein[cite: 2].
-* **Drag-Steuerung deaktivieren:** Deaktiviert das Wischen in der Grafik, falls du nur die Tasten nutzen möchtest[cite: 2].
-* **Farben:** Individuelle Color-Picker für Rahmen, Behang, Fenster und Buttons inkl. Reset-Funktion. Wird die Fensterfarbe auf Standard (leer) gesetzt, greift automatisch der Himmels-Farbverlauf der Sonne[cite: 2].
+- **Title:** The heading of the card.
+- **Main Entity:** Your `cover.*` entity.
+- **Cover Type:** Choose between *Garage Door*, *Roller Shutter*, and *Venetian Blind* (as well as the new window/door variants).
+- **Invert Position / Tilt:** If your entity interprets 0% as "Open", you can reverse this behavior here.
+- **Light / Switch (Optional):** For the room light reflection in the window.
+- **Sensor / Contact (Optional):** Displays the status of an additional window or door contact as a small text badge.
+- **Visibility:** Toggle status texts, Up/Down buttons, stop buttons, or the vent button individually.
+- **Disable Drag Control:** Disables swiping in the graphic if you only want to use the buttons.
+- **Colors:** Individual color pickers for the frame, cover, window, and buttons, including a reset function. If the window color is set to default (empty), the sun's sky color gradient applies automatically.
 
-### Manuelle YAML-Konfiguration (Optional)
+### Manual YAML Configuration (Optional)
 
-Falls du YAML bevorzugst, hier ein Beispiel-Code:
+If you prefer YAML, here is an example code:
 
 ```yaml
 type: custom:realistic-cover-card
