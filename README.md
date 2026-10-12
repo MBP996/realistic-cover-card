@@ -75,6 +75,13 @@ You can easily add the card via the visual editor in Home Assistant. Simply sele
 - **Disable Drag Control:** Disables swiping in the graphic if you only want to use the buttons.
 - **Colors:** Individual color pickers for the frame, cover, window, and buttons, including a reset function. If the window color is set to default (empty), the sun's sky color gradient applies automatically.
 
+## ⚠️ Disclaimer
+
+This custom card is provided "as is" and its use is entirely at your own risk.
+The developer assumes no responsibility or liability for any malfunctions, damages,
+or unexpected behavior of your physical garage doors, roller shutters, or venetian blinds.
+Always ensure your physical hardware has proper safety mechanisms in place.
+
 ### Manual YAML Configuration (Optional)
 
 If you prefer YAML, here is an example code:
@@ -90,12 +97,3 @@ show_stop_button: true
 show_vent_button: true
 vent_percentage: 15
 use_3d_colors: true
-
-
-## ⚠️ Disclaimer
-
-This custom card is provided "as is" and its use is entirely at your own risk.
-The developer assumes no responsibility or liability for any malfunctions, damages,
-or unexpected behavior of your physical garage doors, roller shutters, or venetian blinds.
-Always ensure your physical hardware has proper safety mechanisms in place.
-
