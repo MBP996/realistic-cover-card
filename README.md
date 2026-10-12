@@ -5,6 +5,7 @@ A high-quality, interactive, and animated custom card for Home Assistant to cont
 The card uses advanced SVG rendering to display the current state and movement of your covers in real-time, and reacts dynamically to your environment (e.g., sun position and room lighting).
 
 If you enjoy this project and want to support my work, I'd appreciate a coffee! ☕
+
 <a href="https://www.buymeacoffee.com/MBPProjects" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 ## 🎬 Model Preview
@@ -89,3 +90,12 @@ show_stop_button: true
 show_vent_button: true
 vent_percentage: 15
 use_3d_colors: true
+
+
+## ⚠️ Disclaimer
+
+This custom card is provided "as is" and its use is entirely at your own risk.
+The developer assumes no responsibility or liability for any malfunctions, damages,
+or unexpected behavior of your physical garage doors, roller shutters, or venetian blinds.
+Always ensure your physical hardware has proper safety mechanisms in place.
+
